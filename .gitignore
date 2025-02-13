@@ -170,3 +170,44 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# 🔹 추가: FastAPI 관련
+*.db
+*.sqlite3
+*.log
+logs/
+alembic/versions/  # Alembic 마이그레이션 히스토리
+
+# 🔹 추가: 환경 변수 및 설정 파일 (보안)
+config.json
+secrets.json
+.env.local
+.env.development
+.env.production
+
+# 🔹 추가: Docker 관련
+.dockerignore
+docker-compose.override.yml
+docker-volumes/
+*.pid  # Docker 컨테이너 PID 파일
+
+# 🔹 추가: Kubernetes 관련
+*.kube/
+*.kubeconfig
+k8s-deployments/
+helm-charts/
+
+# 🔹 추가: Node.js 관련 (프론트엔드 프로젝트 연동 시 필요)
+node_modules/
+*.lock
+package-lock.json
+yarn.lock
+npm-debug.log
+yarn-error.log
+
+# 🔹 추가: Visual Studio Code 및 IDE 설정
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
