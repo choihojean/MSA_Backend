@@ -47,3 +47,16 @@ def protected_route(user: dict = Depends(get_current_user)):
         "message": "보호된 엔드포인트입니다",
         "user": user
     }
+
+@router.get("/me")
+def get_user_info(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id == user["user_id"]).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+    
+    return {
+        "id":db_user.id,
+        "email":db_user.email,
+        "name":db_user.name
+    }
