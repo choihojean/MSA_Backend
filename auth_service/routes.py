@@ -4,6 +4,7 @@ from .database import get_db
 from .models import User
 from .utils import hash_password, verify_password, create_access_token
 from .schemas import UserCreate, LoginRequest
+from .dependencies import get_current_user
 
 router = APIRouter()
 
@@ -39,3 +40,10 @@ def login(user: LoginRequest, db: Session = Depends(get_db)):
     access_token = create_access_token(user_id=db_user.id, email=db_user.email)
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/protected")
+def protected_route(user: dict = Depends(get_current_user)):
+    return {
+        "message": "보호된 엔드포인트입니다",
+        "user": user
+    }
