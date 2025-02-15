@@ -30,7 +30,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login")
 def login(user: LoginRequest, db: Session = Depends(get_db)):
     #사용자 존재 확인인
-    db_user = db.query(User).filter(User.email == user.email).first()
+    db_user = db.query(User).filter(User.email == user.email, User.is_deleted==False).first()
     if not db_user:
         raise HTTPException(status_code = 400, detail="이메일이나 비밀번호가 올바르지 않습니다.")
     
@@ -57,8 +57,8 @@ def change_password(
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
-    ):
-    db_user = db.query(User).filter(User.id == user["user_id"]).first()
+):
+    db_user = db.query(User).filter(User.id == user["user_id"],User.is_deleted == False).first()
 
     if not db_user:
         raise HTTPException(status_code=404, detail="존재하는 유저가 아닙니다.")
@@ -100,3 +100,27 @@ def get_user_info(user: dict = Depends(get_current_user), db: Session = Depends(
         "name":db_user.name
     }
 
+@router.delete("/delete-account")
+def delete_account(
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+):
+    db_user = db.query(User).filter(User.id == user["user_id"]).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+    
+    #삭제된 계정인지
+    if db_user.is_deleted:
+        raise HTTPException(status_code=400, detail="이미 삭제된 계정입니다.")
+    
+    db_user.is_deleted = True
+    db.commit()
+
+    expires_in = user["exp"] - int(datetime.datetime.now(datetime.UTC).timestamp())
+    if expires_in > 0:
+        add_to_blacklist(token, expires_in)
+
+    return {"message": "계정이 성공적으로 삭제되었습니다."}
+    
