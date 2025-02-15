@@ -2,7 +2,7 @@ import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .database import get_db
-from .models import User
+from .models import User, UserType
 from .utils import hash_password, verify_password, create_access_token
 from .schemas import UserCreate, LoginRequest, ChangePasswordRequest
 from .dependencies import get_current_user, oauth2_scheme
@@ -14,18 +14,29 @@ router = APIRouter()
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
+        if existing_user.is_deleted:
+            existing_user.is_deleted=False
+            existing_user.password = hashed_password
+            db.commit()
+            return {"message":"삭제된 계정을 복구했습니다. 다시 로그인하세요"}
         raise HTTPException(status_code = 400, detail = "이미 등록된 이메일입니다.")
 
     #비밀번호 암호화
     hashed_password = hash_password(user.password)
 
     #사용자 생성
-    new_user = User(email = user.email, password = hashed_password, name = user.name)
+    new_user = User(
+        email = user.email, 
+        password = hashed_password, 
+        name = user.name,
+        usertype=UserType.USER
+        )
+    
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    return {"message:": "회원가입이 성공적으로 완료되었습니다.", "user_id": new_user.id} 
+    return {"message": "회원가입이 성공적으로 완료되었습니다.", "user_id": new_user.id} 
 
 @router.post("/login")
 def login(user: LoginRequest, db: Session = Depends(get_db)):
@@ -72,7 +83,7 @@ def change_password(
     db.commit()
 
     #모든 세션에서 logout(JWT블랙리스트에 추가가)
-    expires_in = user["exp"] - int(datetime.datetime.now(datetime.UTC).timestamp())
+    expires_in = user["exp"] - int(datetime.datetime.now(datetime.timezone.utc).timestamp())
     if expires_in > 0:
         add_to_blacklist(token, expires_in)
 
@@ -118,7 +129,7 @@ def delete_account(
     db_user.is_deleted = True
     db.commit()
 
-    expires_in = user["exp"] - int(datetime.datetime.now(datetime.UTC).timestamp())
+    expires_in = user["exp"] - int(datetime.datetime.now(datetime.timezone.utc).timestamp())
     if expires_in > 0:
         add_to_blacklist(token, expires_in)
 
