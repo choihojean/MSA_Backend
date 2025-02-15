@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models import User
 from .utils import hash_password, verify_password, create_access_token
-from .schemas import UserCreate, LoginRequest
+from .schemas import UserCreate, LoginRequest, ChangePasswordRequest
 from .dependencies import get_current_user, oauth2_scheme
 from .redis_client import add_to_blacklist
 
@@ -50,6 +50,35 @@ def logout(user: dict = Depends(get_current_user), token: str = Depends(oauth2_s
         add_to_blacklist(token, expires_in)
 
     return {"message": "성공적으로 로그아웃 되었습니다."}
+
+@router.post("/change-password")
+def change_password(
+    request: ChangePasswordRequest,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+    ):
+    db_user = db.query(User).filter(User.id == user["user_id"]).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="존재하는 유저가 아닙니다.")
+    
+    #현재 PW확인
+    if not verify_password(request.current_password, db_user.password):
+        raise HTTPException(status_code = 404, detail="현재 비밀번호가 일치하지 않습니다.")
+    
+    #새 PW 암호화 후 저장
+    db_user.password = hash_password(request.new_password)
+    db.commit()
+
+    #모든 세션에서 logout(JWT블랙리스트에 추가가)
+    expires_in = user["exp"] - int(datetime.datetime.now(datetime.UTC).timestamp())
+    if expires_in > 0:
+        add_to_blacklist(token, expires_in)
+
+    return {"message":"비밀번호 변경이 성공적으로 완료되었습니다. 다시 로그인 해주세요."}
+
+
 
 @router.get("/protected")
 def protected_route(user: dict = Depends(get_current_user)):

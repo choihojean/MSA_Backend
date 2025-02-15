@@ -8,3 +8,7 @@ class UserCreate(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
