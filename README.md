@@ -8,6 +8,6 @@ CI/CD 파이프라인 구축<br/>
 Redis 캐싱 & 성능 최적화<br/>
 
 
-MYSQL 컨테이너로 실행<br/><br/>
+auth_service(인증서비스) docker 컨테이너로 실행(dockerfile, requirements.txt를 auth_service 내부에 두고 docker-compose.yml은 루트 디렉토리에 위치)<br/><br/>
 로그아웃 시 토큰을 Redis에 저장하는 블랙리스트 방식 사용(해당 JWT로 API 요청 시 401반환하고, 만료 시 redis에서 제거)<br/><br/>
 회원탈퇴 시 소프트 삭제 방식(is_deleted=True) 적용<br/><br/>

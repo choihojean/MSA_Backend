@@ -1,28 +1,25 @@
 services:
   auth_service:
-    build: .
+    build:
+      context: .
+      dockerfile: auth_service/dockerfile
     container_name: auth_service
     ports:
       - "8000:8000"
     depends_on:
       - mysql
       - redis
-    environment:
-      - DATABASE_URL=mysql+pymysql://msa_user:0000@mysql/auth_db
-      - JWT_SECRET=1de0196f272023b54788a65b065ca324e65118525045ae7b4edf0f5651f04a1b
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+    env_file:
+      - ./auth_service/.env
+    
     restart: always
 
   mysql:
     image: mysql:8.0
     container_name: mysql
     restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: auth_db
-      MYSQL_USER: msa_user
-      MYSQL_PASSWORD: 0000
+    env_file:
+      - ./auth_service/.env
     ports:
       - "3308:3306"
     volumes:
